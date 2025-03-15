@@ -44,6 +44,7 @@
             margin: 10px auto;
             background-color: #b1dacc;
             position: relative;
+            touch-action: none;
         }
 
         .cell {
@@ -231,11 +232,7 @@
         }
 
         function handleDirection(newDir) {
-            if (!isGameRunning) {
-                messageDisplay.textContent = '';
-                gameOverMessage.style.display = 'none';
-                startGame();
-            }
+            if (!isGameRunning) return;
 
             const validMoves = {
                 up: () => direction.y === 0,
@@ -264,6 +261,7 @@
             apple = generateApple();
             isGameRunning = true;
             
+            if (gameInterval) clearInterval(gameInterval);
             gameInterval = setInterval(() => {
                 if (isGameRunning) moveSnake();
             }, 150);
@@ -275,6 +273,19 @@
             gameOverMessage.textContent = `Game Over!\nPontos: ${score}`;
             gameOverMessage.style.display = 'block';
             messageDisplay.textContent = 'Toque para recomeçar';
+        }
+
+        // Event listeners para iniciar o jogo
+        document.addEventListener('touchstart', handleStart);
+        document.addEventListener('click', handleStart);
+
+        function handleStart(e) {
+            if (!isGameRunning) {
+                e.preventDefault();
+                messageDisplay.textContent = '';
+                gameOverMessage.style.display = 'none';
+                startGame();
+            }
         }
 
         document.querySelectorAll('.dpad-btn').forEach(btn => {
