@@ -135,7 +135,7 @@
         .dpad-btn[data-direction="right"] { grid-area: right; }
         .dpad-btn[data-direction="down"] { grid-area: down; }
 
-        @media (hover: none) and (pointer: coarse) {
+        @media (pointer: coarse) {
             #dpad {
                 display: grid;
             }
@@ -255,7 +255,7 @@
             if (isGameRunning) return;
             
             snake = [{ x: 10, y: 10 }];
-            direction = { x: 0, y: 0 };
+            direction = { x: 1, y: 0 }; // Direção inicial para a direita
             score = 0;
             scoreDisplay.textContent = `Pontos: ${score}`;
             apple = generateApple();
@@ -288,18 +288,22 @@
             }
         }
 
+        // Event listeners para controles
         document.querySelectorAll('.dpad-btn').forEach(btn => {
             btn.addEventListener('touchstart', (e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 handleDirection(btn.dataset.direction);
             });
             
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 handleDirection(btn.dataset.direction);
             });
         });
 
+        // Inicialização do jogo
         createBoard();
     </script>
 </body>
