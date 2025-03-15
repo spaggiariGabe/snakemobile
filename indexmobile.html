@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Snake Game Mobile</title>
+    <style>
+        * {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            overflow: hidden;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            touch-action: manipulation;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #ffffff;
+        }
+
+        h1 {
+            color: #333;
+            margin: 10px 0;
+            font-size: 1.5em;
+        }
+
+        #game {
+            display: grid;
+            grid-template-columns: repeat(20, min(4vw, 20px));
+            grid-template-rows: repeat(20, min(4vw, 20px));
+            justify-content: center;
+            gap: 1px;
+            margin: 10px auto;
+            background-color: #b1dacc;
+            position: relative;
+        }
+
+        .cell {
+            width: min(4vw, 20px);
+            height: min(4vw, 20px);
+            background-color: #ffffff;
+        }
+
+        .snake {
+            background-color: green;
+        }
+
+        .apple {
+            background-color: red;
+        }
+
+        #score {
+            font-size: 1.2em;
+            margin: 10px;
+        }
+
+        #message {
+            font-size: 0.9em;
+            color: #f00;
+            margin: 10px;
+            min-height: 20px;
+        }
+
+        #game-over-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.5em;
+            color: red;
+            font-weight: bold;
+            display: none;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+        }
+
+        /* Controle em D-pad */
+        #dpad {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            z-index: 100;
+        }
+
+        .dpad-container {
+            display: grid;
+            grid-template-areas:
+                ". up ."
+                "left . right"
+                ". down .";
+            gap: 10px;
+            background: rgba(200, 200, 200, 0.3);
+            padding: 20px;
+            border-radius: 50px;
+        }
+
+        .dpad-btn {
+            width: 50px;
+            height: 50px;
+            border: none;
+            border-radius: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+
+        .dpad-btn:active {
+            background: rgba(0, 0, 0, 0.5);
+            transform: scale(0.9);
+        }
+
+        .dpad-btn[data-direction="up"] { grid-area: up; }
+        .dpad-btn[data-direction="left"] { grid-area: left; }
+        .dpad-btn[data-direction="right"] { grid-area: right; }
+        .dpad-btn[data-direction="down"] { grid-area: down; }
+
+        @media (hover: none) and (pointer: coarse) {
+            #dpad {
+                display: grid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Snake Game</h1>
+    <div id="score">Pontos: 0</div>
+    <div id="game"></div>
+    <div id="message">Toque para começar!</div>
+    
+    <!-- Controle D-pad -->
+    <div id="dpad">
+        <div class="dpad-container">
+            <button class="dpad-btn" data-direction="up">↑</button>
+            <button class="dpad-btn" data-direction="left">←</button>
+            <button class="dpad-btn" data-direction="right">→</button>
+            <button class="dpad-btn" data-direction="down">↓</button>
+        </div>
+    </div>
+
+    <script>
+        const boardSize = 20;
+        const gameBoard = document.getElementById('game');
+        const scoreDisplay = document.getElementById('score');
+        const messageDisplay = document.getElementById('message');
+        const gameOverMessage = document.createElement('div');
+        gameOverMessage.id = 'game-over-message';
+        document.body.appendChild(gameOverMessage);
+
+        let snake = [{ x: 10, y: 10 }];
+        let apple = generateApple();
+        let direction = { x: 0, y: 0 };
+        let score = 0;
+        let gameInterval;
+        let isGameRunning = false;
+
+        function createBoard() {
+            gameBoard.innerHTML = '';
+            for (let y = 0; y < boardSize; y++) {
+                for (let x = 0; x < boardSize; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell' + 
+                        (isSnake(x, y) ? ' snake' : '') + 
+                        (isApple(x, y) ? ' apple' : '');
+                    gameBoard.appendChild(cell);
+                }
+            }
+        }
+
+        function isSnake(x, y) {
+            return snake.some(segment => segment.x === x && segment.y === y);
+        }
+
+        function isApple(x, y) {
+            return apple.x === x && apple.y === y;
+        }
+
+        function moveSnake() {
+            const newHead = {
+                x: snake[0].x + direction.x,
+                y: snake[0].y + direction.y
+            };
+
+            if (newHead.x < 0 || newHead.x >= boardSize || 
+                newHead.y < 0 || newHead.y >= boardSize || 
+                isSnake(newHead.x, newHead.y)) {
+                endGame();
+                return;
+            }
+
+            snake.unshift(newHead);
+
+            if (newHead.x === apple.x && newHead.y === apple.y) {
+                score++;
+                scoreDisplay.textContent = `Pontos: ${score}`;
+                apple = generateApple();
+            } else {
+                snake.pop();
+            }
+
+            createBoard();
+        }
+
+        function generateApple() {
+            let newApple;
+            do {
+                newApple = {
+                    x: Math.floor(Math.random() * boardSize),
+                    y: Math.floor(Math.random() * boardSize)
+                };
+            } while (isSnake(newApple.x, newApple.y));
+            return newApple;
+        }
+
+        function handleDirection(newDir) {
+            if (!isGameRunning) {
+                messageDisplay.textContent = '';
+                gameOverMessage.style.display = 'none';
+                startGame();
+            }
+
+            const validMoves = {
+                up: () => direction.y === 0,
+                down: () => direction.y === 0,
+                left: () => direction.x === 0,
+                right: () => direction.x === 0
+            };
+
+            if (validMoves[newDir] && validMoves[newDir]()) {
+                direction = {
+                    up: { x: 0, y: -1 },
+                    down: { x: 0, y: 1 },
+                    left: { x: -1, y: 0 },
+                    right: { x: 1, y: 0 }
+                }[newDir];
+            }
+        }
+
+        function startGame() {
+            if (isGameRunning) return;
+            
+            snake = [{ x: 10, y: 10 }];
+            direction = { x: 0, y: 0 };
+            score = 0;
+            scoreDisplay.textContent = `Pontos: ${score}`;
+            apple = generateApple();
+            isGameRunning = true;
+            
+            gameInterval = setInterval(() => {
+                if (isGameRunning) moveSnake();
+            }, 150);
+        }
+
+        function endGame() {
+            clearInterval(gameInterval);
+            isGameRunning = false;
+            gameOverMessage.textContent = `Game Over!\nPontos: ${score}`;
+            gameOverMessage.style.display = 'block';
+            messageDisplay.textContent = 'Toque para recomeçar';
+        }
+
+        // Eventos dos botões
+        document.querySelectorAll('.dpad-btn').forEach(btn => {
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                handleDirection(btn.dataset.direction);
+            });
+            
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                handleDirection(btn.dataset.direction);
+            });
+        });
+
+        // Inicialização
+        createBoard();
+    </script>
+</body>
+</html>
