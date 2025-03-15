@@ -88,7 +88,6 @@
             box-shadow: 0 0 10px rgba(0,0,0,0.3);
         }
 
-        /* Controle em D-pad */
         #dpad {
             position: fixed;
             bottom: 30px;
@@ -148,7 +147,6 @@
     <div id="game"></div>
     <div id="message">Toque para começar!</div>
     
-    <!-- Controle D-pad -->
     <div id="dpad">
         <div class="dpad-container">
             <button class="dpad-btn" data-direction="up">↑</button>
@@ -279,7 +277,6 @@
             messageDisplay.textContent = 'Toque para recomeçar';
         }
 
-        // Eventos dos botões
         document.querySelectorAll('.dpad-btn').forEach(btn => {
             btn.addEventListener('touchstart', (e) => {
                 e.preventDefault();
@@ -292,7 +289,6 @@
             });
         });
 
-        // Inicialização
         createBoard();
     </script>
 </body>
